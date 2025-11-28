@@ -1,11 +1,31 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/ChixXx1/expense-tracker/internal/database"
+	"github.com/ChixXx1/expense-tracker/internal/handlers"
+	"github.com/gin-gonic/gin"
+)
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Aplication Go + React has been started..."))
-	})
 
-	http.ListenAndServe(":8080", nil)
+	storage := database.NewMemoryStorage()
+	categoryHandler := handlers.NewCategoryHandler(storage)
+
+	r := gin.Default()
+
+	r.GET("/ping", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "pong",
+		})
+	})
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "WEB-APPLICATION GO+REACT",
+		})
+	})
+	r.GET("/categories", categoryHandler.GetCategories)
+
+	r.Run(":8080")
 }
