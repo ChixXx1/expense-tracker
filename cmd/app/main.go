@@ -15,6 +15,7 @@ func main() {
 
 	r := gin.Default()
 
+
 	r.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "pong",
@@ -27,5 +28,6 @@ func main() {
 	})
 	r.GET("/categories", categoryHandler.GetCategories)
 
+	
 	r.Run(":8080")
 }
