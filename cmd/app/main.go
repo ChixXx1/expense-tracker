@@ -27,6 +27,7 @@ func main() {
 		})
 	})
 	r.GET("/categories", categoryHandler.GetCategories)
+	r.GET("/categories/:id", categoryHandler.GetCategoryByID)
 
 	
 	r.Run(":8080")

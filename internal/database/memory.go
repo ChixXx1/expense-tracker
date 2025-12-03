@@ -1,6 +1,8 @@
 package database
 
 import (
+	"errors"
+
 	"github.com/ChixXx1/expense-tracker/internal/models"
 )
 
@@ -21,4 +23,14 @@ func NewMemoryStorage() *MemoryStorage {
 
 func(ms *MemoryStorage) GetCategories() ([]models.Category, error) {
 	return ms.categories, nil
+}
+
+func(ms *MemoryStorage) GetCategoryByID(id int) (*models.Category, error) {
+	for _, v := range ms.categories {
+		if v.ID == id{
+			return &ms.categories[id], nil
+		}
+	}
+
+	return nil, errors.New("the category is missing")
 }
