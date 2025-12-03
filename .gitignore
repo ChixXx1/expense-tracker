@@ -2,7 +2,7 @@
 *.exe
 *.test
 
-/web
+/web/
 
 
 web/node_modules/
