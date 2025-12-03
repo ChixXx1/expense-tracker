@@ -27,7 +27,7 @@ frontend-install:
 dev: build start
 
 full-dev:
-	@make dev && make frontend-dev
+	@make start && make frontend-dev
 
 help:
 	@echo "Available commands:"
