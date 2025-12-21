@@ -10,11 +10,16 @@ import (
 
 func main() {
 
-	storage := database.NewMemoryStorage()
+	//storage := database.NewMemoryStorage()
+	storage := database.NewJSONStorage("./data.json")
 	categoryHandler := handlers.NewCategoryHandler(storage)
 
 	r := gin.Default()
 
+	r.StaticFile("/favicon.ico", "./static/favicon.ico")
+  /* r.GET("/favicon.ico", func(c *gin.Context) {
+    c.Status(http.StatusNoContent)
+  }) */
 
 	r.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{

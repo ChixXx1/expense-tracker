@@ -32,12 +32,12 @@ func(h *CategoryHandler) GetCategories(ctx *gin.Context){
 }
 
 func(h *CategoryHandler) GetCategoryByID(ctx *gin.Context) {
-	idParam := ctx.Param(":id")
+	idParam := ctx.Param("id")
 
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": "inavalid category ID",
+			"error": "invalid category ID",
 		})
 		return
 	}
@@ -47,15 +47,17 @@ func(h *CategoryHandler) GetCategoryByID(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, gin.H{
 			"error": "failed to get category by ID",
 		})
+		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"category": category,
 	})
+
 }
 
 func(h *CategoryHandler) CreateCategory(ctx *gin.Context) error{
-
+	
 
 
 	return nil
