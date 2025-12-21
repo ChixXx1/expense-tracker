@@ -6,8 +6,8 @@ type Storage interface {
 	GetCategories() ([]models.Category, error)
 	GetCategoryByID(id int) (*models.Category, error)
 	CreateCategory(category *models.Category) error
-	//UpdateCategory(category *models.Category) error 
-	//DeleteCategory(id int) error
+	UpdateCategory(category *models.Category) error 
+	DeleteCategory(id int) error
 
 	
 }

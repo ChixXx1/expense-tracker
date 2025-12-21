@@ -28,12 +28,23 @@ func NewJSONStorage(filepath string) *JSONStorage{
 
 	if err := storage.load(); err != nil{
 		storage.categories = models.GetDefaultCategories()
-
+		if len(storage.categories) > 0{
+			maxID := 0
+			for _, cat := range storage.categories{
+				if cat.ID > maxID{
+					maxID = cat.ID
+				}
+				storage.nextID["category"] = maxID + 1
+			}
+		}
+		
 		storage.save()
 	}
 
 	return storage
 }
+
+
 
 func(s *JSONStorage) load() error {
 	fileData, err := os.ReadFile(s.filepath)
@@ -106,5 +117,43 @@ func(s *JSONStorage) CreateCategory(category *models.Category) error {
 			return errors.New("category with this name is already exists with this type")
 		}
 	}
+
+	category.ID = s.nextID["category"]
+	s.nextID["category"]++
+	s.categories = append(s.categories, *category)
+
 	return nil
+}
+
+func(s *JSONStorage) UpdateCategory(category *models.Category) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, cat := range s.categories {
+		if cat.ID == category.ID {
+			for j, other := range s.categories {
+				if i != j && category.Name == other.Name && category.Type == other.Type {
+					return errors.New("category with this name already exists for this type")
+				}
+			}
+			s.categories[i] = *category
+			return s.save()
+		}
+	}
+
+	return errors.New("category is not found")
+}
+
+func(s *JSONStorage) DeleteCategory(id int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, cat := range s.categories {
+		if id == cat.ID {
+			s.categories = append(s.categories[:i], s.categories[i + 1:]...)
+			return s.save()
+		}
+	}
+
+	return errors.New("category is not found")
 }
