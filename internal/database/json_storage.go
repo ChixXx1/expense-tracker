@@ -68,8 +68,8 @@ func(s *JSONStorage) load() error {
 }
 
 func(s *JSONStorage) save() error {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	//s.mu.RLock()
+	//defer s.mu.RUnlock()
 
 	data := struct{
 		Categories []models.Category `json:"categories"`
@@ -122,7 +122,7 @@ func(s *JSONStorage) CreateCategory(category *models.Category) error {
 	s.nextID["category"]++
 	s.categories = append(s.categories, *category)
 
-	return nil
+	return s.save()
 }
 
 func(s *JSONStorage) UpdateCategory(category *models.Category) error {
