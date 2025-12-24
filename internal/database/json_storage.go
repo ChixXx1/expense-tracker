@@ -12,6 +12,7 @@ import (
 type JSONStorage struct {
 	mu       			sync.RWMutex
 	categories 		[]models.Category
+	transactions  []models.Transaction
 	filepath 			string
 	nextID	 			map[string]int
 }
@@ -23,21 +24,13 @@ func NewJSONStorage(filepath string) *JSONStorage{
 		filepath: 		filepath,
 		nextID: 			map[string]int{
 			"category": 1,
+			"transaction": 1,
 		},
 	}
 
 	if err := storage.load(); err != nil{
 		storage.categories = models.GetDefaultCategories()
-		if len(storage.categories) > 0{
-			maxID := 0
-			for _, cat := range storage.categories{
-				if cat.ID > maxID{
-					maxID = cat.ID
-				}
-				storage.nextID["category"] = maxID + 1
-			}
-		}
-		
+		storage.updateNextID()
 		storage.save()
 	}
 
@@ -63,7 +56,9 @@ func(s *JSONStorage) load() error {
 	s.mu.Lock()
 	s.categories = data.Categories
 	s.mu.Unlock()
-
+	
+	s.updateNextID()
+	
 	return nil
 }
 
@@ -83,6 +78,19 @@ func(s *JSONStorage) save() error {
 	}
 	
 	return os.WriteFile(s.filepath, fileData, 0644)
+}
+
+func(s *JSONStorage) updateNextID(){
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	maxID := 0
+	for _, cat := range s.categories{
+		if cat.ID > maxID{
+			maxID = cat.ID
+		}
+	}
+	s.nextID["category"] = maxID + 1
 }
 
 func(s *JSONStorage) GetCategories() ([]models.Category, error){
