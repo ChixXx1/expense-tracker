@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/ChixXx1/expense-tracker/internal/models"
 )
@@ -30,6 +31,7 @@ func NewJSONStorage(filepath string) *JSONStorage{
 
 	if err := storage.load(); err != nil{
 		storage.categories = models.GetDefaultCategories()
+		storage.transactions = []models.Transaction{}
 		storage.updateNextID()
 		storage.save()
 	}
@@ -37,7 +39,27 @@ func NewJSONStorage(filepath string) *JSONStorage{
 	return storage
 }
 
+func(s *JSONStorage) updateNextID(){
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
+	catMaxID := 0
+	transMaxID := 0
+	for _, cat := range s.categories{
+		if cat.ID > catMaxID{
+			catMaxID = cat.ID
+		}
+	}
+
+	for _, tr := range s.transactions{
+		if tr.ID > transMaxID{
+			transMaxID = tr.ID
+		}
+	}
+
+	s.nextID["category"] = catMaxID + 1
+	s.nextID["transaction"] = transMaxID + 1
+}
 
 func(s *JSONStorage) load() error {
 	fileData, err := os.ReadFile(s.filepath)
@@ -46,7 +68,8 @@ func(s *JSONStorage) load() error {
 	}
 
 	var data struct{
-		Categories []models.Category `json:"categories"`
+		Categories 		[]models.Category `json:"categories"`
+		Transactions  []models.Transaction `json:"transactions"`
 	}
 	
 	if err := json.Unmarshal(fileData, &data); err != nil {
@@ -55,21 +78,23 @@ func(s *JSONStorage) load() error {
 
 	s.mu.Lock()
 	s.categories = data.Categories
+	s.transactions = data.Transactions
 	s.mu.Unlock()
 	
 	s.updateNextID()
 	
 	return nil
 }
-
 func(s *JSONStorage) save() error {
 	//s.mu.RLock()
 	//defer s.mu.RUnlock()
 
 	data := struct{
 		Categories []models.Category `json:"categories"`
+		Transactions  []models.Transaction `json:"transactions"`
 	}{
 		Categories: s.categories,
+		Transactions: s.transactions,
 	}
 
 	fileData, err := json.MarshalIndent(&data, "", "	")
@@ -80,19 +105,6 @@ func(s *JSONStorage) save() error {
 	return os.WriteFile(s.filepath, fileData, 0644)
 }
 
-func(s *JSONStorage) updateNextID(){
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	maxID := 0
-	for _, cat := range s.categories{
-		if cat.ID > maxID{
-			maxID = cat.ID
-		}
-	}
-	s.nextID["category"] = maxID + 1
-}
-
 func(s *JSONStorage) GetCategories() ([]models.Category, error){
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -101,7 +113,6 @@ func(s *JSONStorage) GetCategories() ([]models.Category, error){
 
 	return categories, nil
 }
-
 func(s *JSONStorage) GetCategoryByID(id int) (*models.Category, error){
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -115,7 +126,6 @@ func(s *JSONStorage) GetCategoryByID(id int) (*models.Category, error){
 
 	return nil, errors.New("category is not found!")
 }
-
 func(s *JSONStorage) CreateCategory(category *models.Category) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -132,7 +142,6 @@ func(s *JSONStorage) CreateCategory(category *models.Category) error {
 
 	return s.save()
 }
-
 func(s *JSONStorage) UpdateCategory(category *models.Category) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -151,7 +160,6 @@ func(s *JSONStorage) UpdateCategory(category *models.Category) error {
 
 	return errors.New("category is not found")
 }
-
 func(s *JSONStorage) DeleteCategory(id int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -164,4 +172,156 @@ func(s *JSONStorage) DeleteCategory(id int) error {
 	}
 
 	return errors.New("category is not found")
+}
+
+func(s *JSONStorage) GetTransactions(filters TransactionFilters) ([]models.Transaction, error) {
+  s.mu.RLock()
+  defer s.mu.RUnlock()
+    
+  var result []models.Transaction
+
+  for _, tr := range s.transactions {
+    if filters.StartDate != nil && tr.Date.Before(*filters.StartDate) {
+        continue
+    }
+        
+    if filters.EndDate != nil && tr.Date.After(*filters.EndDate) {
+      continue
+    }
+        
+    if filters.CategoryID != nil && tr.CategoryID != *filters.CategoryID {
+      continue
+    }
+        
+  	if filters.Type != nil && tr.Type != *filters.Type {
+      continue
+    }
+        
+    if filters.PaymentMethod != nil && tr.PaymentMethod != *filters.PaymentMethod {
+      continue
+    }
+        
+    result = append(result, tr)
+  }
+    
+  start := 0
+  if filters.Offset != nil && *filters.Offset > 0 {
+    start = *filters.Offset
+  }
+    
+  if start >= len(result) {
+    return []models.Transaction{}, nil
+	}
+    
+  end := len(result)
+  if filters.Limit != nil && *filters.Limit > 0 {
+    end = start + *filters.Limit
+    if end > len(result) {
+      end = len(result)
+    }
+  }
+    
+  return result[start:end], nil
+}
+func(s *JSONStorage) GetTransactionByID(id int) (*models.Transaction, error) {
+  s.mu.RLock()
+  defer s.mu.RUnlock()
+    
+  for i, tr := range s.transactions {
+    if tr.ID == id {
+      transaction := s.transactions[i]
+      return &transaction, nil
+    }
+  }
+    
+  return nil, errors.New("transaction not found")
+}
+func(s *JSONStorage) CreateTransaction(transaction *models.Transaction) error {
+  s.mu.Lock()
+  defer s.mu.Unlock()
+    
+  categoryExists := false
+  for _, cat := range s.categories {
+    if cat.ID == transaction.CategoryID {
+      categoryExists = true
+      break
+    }
+  }
+    
+  if !categoryExists {
+    return errors.New("category does not exist")
+  }
+    
+	if !transaction.IsValidAmount() {
+    return errors.New("invalid amount")
+  }
+    
+	if transaction.Type != models.TransactionTypeIncome && 
+  	transaction.Type != models.TransactionTypeExpense {
+    return errors.New("transaction type must be 'income' or 'expense'")
+  }
+    
+  if transaction.PaymentMethod != models.PaymentMethodCash &&
+    transaction.PaymentMethod != models.PaymentMethodCard &&
+    transaction.PaymentMethod != models.PaymentMethodTransfer {
+    return errors.New("invalid payment method")
+  }
+    
+  transaction.ID = s.nextID["transaction"]
+  s.nextID["transaction"]++
+    
+  if transaction.CreatedAt.IsZero() {
+    transaction.CreatedAt = time.Now()
+  }
+    
+  s.transactions = append(s.transactions, *transaction)
+    
+  return s.save()
+}
+func(s *JSONStorage) UpdateTransaction(transaction *models.Transaction) error {
+  s.mu.Lock()
+  defer s.mu.Unlock()
+    
+  categoryExists := false
+  for _, cat := range s.categories {
+    if cat.ID == transaction.CategoryID {
+      categoryExists = true
+      break
+    }
+  }
+    
+  if !categoryExists {
+    return errors.New("category does not exist")
+  }
+    
+  if !transaction.IsValidAmount() {
+    return errors.New("invalid amount")
+  }
+    
+  if transaction.Type != models.TransactionTypeIncome && 
+    transaction.Type != models.TransactionTypeExpense {
+    return errors.New("transaction type must be 'income' or 'expense'")
+  }
+    
+  for i, tr := range s.transactions {
+    if tr.ID == transaction.ID {
+      s.transactions[i] = *transaction
+      return s.save()
+    }
+  }
+    
+  return errors.New("transaction not found")
+}
+func(s *JSONStorage) DeleteTransaction(id int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, tr := range s.transactions {
+		if id == tr.ID {
+			s.transactions = append(s.transactions[:i], s.transactions[i + 1:]...)
+			return s.save()
+		}
+	}
+
+	return errors.New("transaction is not found")
 }
