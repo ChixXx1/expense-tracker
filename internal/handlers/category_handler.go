@@ -25,6 +25,7 @@ func(h *CategoryHandler) GetCategories(ctx *gin.Context){
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "failed to get categories",
 		})
+		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{

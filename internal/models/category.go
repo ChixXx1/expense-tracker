@@ -6,7 +6,7 @@ type Category struct {
 	Type     string `json:"type"`
 	Color    string `json:"color"`
 	Icon     string `json:"icon"`
-	ParentID *int   `json:"parent_id,omitempty"` //(указатель на int, так как может быть nil для корневых категорий)
+	//ParentID *int   `json:"parent_id,omitempty"` //(указатель на int, так как может быть nil для корневых категорий)
 }
 
 func GetDefaultCategories() []Category {
