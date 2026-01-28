@@ -1,11 +1,13 @@
 package models
 
+import "errors"
+
 type Category struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	Color    string `json:"color"`
-	Icon     string `json:"icon"`
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Color string `json:"color"`
+	Icon  string `json:"icon"`
 	//ParentID *int   `json:"parent_id,omitempty"` //(указатель на int, так как может быть nil для корневых категорий)
 }
 
@@ -24,10 +26,18 @@ func GetDefaultCategories() []Category {
 	}
 }
 
-func (c *Category) IsIncomeCategory() bool {
-	return c.Type == "income"
-}
+func (c *Category) Validate() error {
+	if c.Name == "" {
+		return errors.New("category name is required")
+	}
 
-func (c *Category) IsExpenseCategory() bool {
-	return c.Type == "expense"
+	if len(c.Name) > 50 {
+		return errors.New("category name is too long (max 50 characters)")
+	}
+
+	if c.Type != "income" && c.Type != "expense" {
+		return errors.New("category type must be 'income' or 'expense'")
+	}
+
+	return nil
 }

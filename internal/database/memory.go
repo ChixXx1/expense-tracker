@@ -6,16 +6,15 @@ import (
 
 type MemoryStorage struct {
 	//mu 						sync.Mutex
-	//transactions 	[]models.Transaction
 	//budgets 			[]models.Budget
-	categories 		[]models.Category
-	nextID 				int
+	transactions []models.Transaction
+	categories   []models.Category
+	nextID       int
 }
 
 func NewMemoryStorage() *MemoryStorage {
 	return &MemoryStorage{
-		categories: 	models.GetDefaultCategories(),
-		nextID: 			1,
+		categories: models.GetDefaultCategories(),
+		nextID:     1,
 	}
 }
-

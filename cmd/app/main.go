@@ -13,6 +13,7 @@ func main() {
 	//storage := database.NewMemoryStorage()
 	storage := database.NewJSONStorage("./data.json")
 	categoryHandler := handlers.NewCategoryHandler(storage)
+	transactionHadler := handlers.NewTransactionHandler(storage)
 
 	r := gin.Default()
 
@@ -36,6 +37,12 @@ func main() {
 	r.POST("/categories", categoryHandler.CreateCategory)
 	r.PUT("/categories/:id", categoryHandler.UpdateCategory)
 	r.DELETE("/categories/:id", categoryHandler.DeleteCategory)
+
+	r.GET("/transactions", transactionHadler.GetTransactions)
+	r.GET("/transactions/:id", transactionHadler.GetTransactionByID)
+	r.POST("/transactions", transactionHadler.CreateTransaction)
+	r.PUT("/transactions/:id", transactionHadler.UpdateTransaction)
+	r.DELETE("/transactions/:id", transactionHadler.DeleteTransaction)
 
 	r.Run(":8080")
 }
