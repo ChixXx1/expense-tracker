@@ -14,13 +14,15 @@ func main() {
 	storage := database.NewJSONStorage("./data.json")
 	categoryHandler := handlers.NewCategoryHandler(storage)
 	transactionHadler := handlers.NewTransactionHandler(storage)
+	budgetHandler := handlers.NewBudgetHandler(storage)
+	reportHandler := handlers.NewReportHandler(storage)
 
 	r := gin.Default()
 
 	r.StaticFile("/favicon.ico", "./static/favicon.ico")
-  /* r.GET("/favicon.ico", func(c *gin.Context) {
-    c.Status(http.StatusNoContent)
-  }) */
+	/* r.GET("/favicon.ico", func(c *gin.Context) {
+	   c.Status(http.StatusNoContent)
+	 }) */
 
 	r.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
@@ -43,6 +45,16 @@ func main() {
 	r.POST("/transactions", transactionHadler.CreateTransaction)
 	r.PUT("/transactions/:id", transactionHadler.UpdateTransaction)
 	r.DELETE("/transactions/:id", transactionHadler.DeleteTransaction)
+
+	r.GET("/budgets", budgetHandler.GetBudgets)
+	r.GET("/budgets/:id", budgetHandler.GetBudgetByID)
+	r.POST("/budgets", budgetHandler.CreateBudget)
+	r.PUT("/budgets/:id", budgetHandler.UpdateBudget)
+	r.DELETE("/budgets/:id", budgetHandler.DeleteBudget)
+
+	r.GET("/reports/financial", reportHandler.GetFinancialSummary)
+	r.GET("/reports/categories", reportHandler.GetCategorySummary)
+	r.GET("/reports/budgets/:id", reportHandler.GetBudgetReport)
 
 	r.Run(":8080")
 }
